@@ -1,34 +1,60 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Posting to Lens
 
-## Getting Started
+This is an example project that shows how to:
 
-First, run the development server:
+1. Authenticate a user with the Lens API
+2. Once authenticated, publish a post to Lens using [typed data](https://eips.ethereum.org/EIPS/eip-712)
 
-```bash
-npm run dev
-# or
-yarn dev
+The `api.js` file has most of the helper functions needed for creating a `withSig` transaction, the GraphQL API, and the GraphQL queries and mutations.
+
+> For this project to run, you must configure the Infura project ID and project secret.
+
+### Sending authenticated requests
+
+Once authenticated, you will receive an access token.
+
+Using this access token, you can send authenticated requests to the Lens API.
+
+Using the Apollo GraphQL client, there are two ways to do this:
+
+1. Manually passing in headers:
+
+```javascript
+const result = await client.mutate({
+  mutation: createPostTypedData,
+  variables: {
+    request,
+  },
+  context: {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }
+})
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Configuring an Apollo Link:
 
-You can start editing the page by modifying `pages/index.js`. The page auto-updates as you edit the file.
+```javascript
+import { ApolloClient, InMemoryCache, gql, createHttpLink } from '@apollo/client'
+import { setContext } from '@apollo/client/link/context';
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.js`.
+const authLink = setContext((_, { headers }) => {
+  const token = window.localStorage.getItem('your-storage-key')
+  return {
+    headers: {
+      ...headers,
+      authorization: token ? `Bearer ${token}` : "",
+    }
+  }
+})
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+const httpLink = createHttpLink({
+  uri: API_URL
+})
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+export const client = new ApolloClient({
+  link: authLink.concat(httpLink),
+  cache: new InMemoryCache()
+})
+```
