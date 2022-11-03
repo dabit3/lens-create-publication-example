@@ -7,7 +7,7 @@ This is an example project that shows how to:
 
 The `api.js` file has most of the helper functions needed for creating a `withSig` transaction, the GraphQL API, and the GraphQL queries and mutations.
 
-> For this project to run, you must configure the Infura project ID and project secret.
+> For this project to run, you must configure the Infura project ID and project secret. Check out `.example.env.local` for guidance.
 
 ### Sending authenticated requests
 
